@@ -1,6 +1,7 @@
 import os
 import json
 import base64
+import tempfile
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -12,6 +13,9 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.output_parsers import JsonOutputParser
+
+# Google Auth for credentials
+from google.oauth2 import service_account
 
 # Google Cloud AI Imports with service flags
 try:
@@ -46,6 +50,47 @@ except ImportError:
 
 # --- CONFIGURATION ---
 load_dotenv()
+
+# --- Google Cloud Credentials Setup for Render ---
+def setup_google_cloud_credentials():
+    """Setup Google Cloud credentials for Render deployment"""
+    
+    # Method 1: Use service account JSON content from environment variable
+    credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+    if credentials_json:
+        try:
+            # Parse the JSON credentials
+            credentials_info = json.loads(credentials_json)
+            
+            # Create temporary file for libraries that need file path
+            temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json')
+            json.dump(credentials_info, temp_file)
+            temp_file.close()
+            
+            # Set environment variable to temp file path
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = temp_file.name
+            
+            # Create credentials object for direct use
+            credentials = service_account.Credentials.from_service_account_info(credentials_info)
+            
+            print("✅ Google Cloud credentials configured successfully")
+            return credentials, temp_file.name
+            
+        except Exception as e:
+            print(f"❌ Error setting up Google Cloud credentials: {e}")
+            return None, None
+    
+    # Method 2: Try existing file path (for local development)
+    existing_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    if existing_path and os.path.exists(existing_path):
+        print(f"✅ Using existing credentials file: {existing_path}")
+        return None, existing_path
+    
+    print("⚠️ No Google Cloud credentials found")
+    return None, None
+
+# Call this before initializing any Google Cloud services
+credentials, creds_path = setup_google_cloud_credentials()
 
 # --- Pydantic Models for API Structure (THE FIX IS HERE) ---
 # We now use the standard `BaseModel` and `Field` from pydantic
@@ -138,39 +183,69 @@ checklist_chain = checklist_prompt | llm | checklist_parser
 
 # --- Google Cloud AI Setup ---
 def setup_document_ai():
-    
+    """Setup Document AI with proper credentials"""
     try:
+        if credentials:
+            client = documentai.DocumentProcessorServiceClient(credentials=credentials)
+        else:
+            client = documentai.DocumentProcessorServiceClient()
+        
         project_id = os.getenv("GOOGLE_CLOUD_PROJECT_ID", "gen-ai-471115")
         processor_id = os.getenv("DOCAI_PROCESSOR_ID", "10529f2538f89942")
         location = "us"  # or your preferred location
         
-        client = documentai.DocumentProcessorServiceClient()
         processor_name = client.processor_path(project_id, location, processor_id)
         
+        print(f"✅ Document AI configured: {processor_name}")
         return client, processor_name
+        
     except Exception as e:
+        print(f"❌ Document AI setup failed: {e}")
         return None, None
 
 def setup_natural_language():
-
+    """Setup Natural Language API with proper credentials"""
     try:
-        return language_v1.LanguageServiceClient()
+        if credentials:
+            client = language_v1.LanguageServiceClient(credentials=credentials)
+        else:
+            client = language_v1.LanguageServiceClient()
+        
+        print("✅ Natural Language API configured")
+        return client
+        
     except Exception as e:
+        print(f"❌ Natural Language API setup failed: {e}")
         return None
 
 def setup_translation():
-
-    
+    """Setup Translation API with proper credentials"""
     try:
-        return translate.Client()
+        if credentials:
+            client = translate.Client(credentials=credentials)
+        else:
+            client = translate.Client()
+        
+        print("✅ Translation API configured")
+        return client
+        
     except Exception as e:
+        print(f"❌ Translation API setup failed: {e}")
         return None
 
 def setup_text_to_speech():
-
+    """Setup Text-to-Speech API with proper credentials"""
     try:
-        return texttospeech.TextToSpeechClient()
+        if credentials:
+            client = texttospeech.TextToSpeechClient(credentials=credentials)
+        else:
+            client = texttospeech.TextToSpeechClient()
+        
+        print("✅ Text-to-Speech API configured")
+        return client
+        
     except Exception as e:
+        print(f"❌ Text-to-Speech API setup failed: {e}")
         return None
 
 def calculate_readability_score(complexity_indicators):
@@ -192,6 +267,14 @@ def calculate_readability_score(complexity_indicators):
 # --- FastAPI App ---
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# Initialize all Google Cloud services at startup
+print("🚀 Initializing Google Cloud AI services...")
+document_ai_client, processor_name = setup_document_ai()
+language_client = setup_natural_language()
+translate_client = setup_translation()
+tts_client = setup_text_to_speech()
+print("✅ Google Cloud AI services initialization complete!")
 
 # --- API ENDPOINTS ---
 @app.post("/analyze", response_model=AnalysisResponse)
@@ -243,8 +326,7 @@ async def analyze_with_document_ai(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="Unsupported file type for Document AI OCR.")
 
         # Document AI setup
-        client, processor_name = setup_document_ai()
-        if not client or not processor_name:
+        if not document_ai_client or not processor_name:
             raise HTTPException(status_code=500, detail="Document AI not configured correctly.")
 
         # Prepare request
@@ -257,7 +339,7 @@ async def analyze_with_document_ai(file: UploadFile = File(...)):
         )
 
         # Process the document
-        result = client.process_document(request=request)
+        result = document_ai_client.process_document(request=request)
         document = result.document
 
         # Extract text
@@ -287,9 +369,6 @@ async def analyze_with_document_ai(file: UploadFile = File(...)):
 async def enhanced_document_analysis(request: DocumentRequest):
     """Enhanced analysis using Google Cloud Natural Language API + Gemini"""
     try:
-        # Initialize Natural Language client
-        language_client = setup_natural_language()
-        
         google_cloud_insights = {}
         
         if language_client and LANGUAGE_AVAILABLE:
@@ -376,8 +455,6 @@ class TranslateSummaryRequest(BaseModel):
 async def translate_summary(request: TranslateSummaryRequest):
     """Translate analysis summary to different language using Google Translate"""
     try:
-        translate_client = setup_translation()
-        
         if not translate_client:
             raise HTTPException(status_code=503, detail="Translation service not available")
         
@@ -418,8 +495,6 @@ async def translate_summary(request: TranslateSummaryRequest):
 async def translate_legal_document(request: TranslationRequest):
     """Translate legal document to different languages"""
     try:
-        translate_client = setup_translation()
-        
         if not translate_client:
             raise HTTPException(status_code=503, detail="Translation service not available")
         
@@ -458,8 +533,6 @@ async def translate_legal_document(request: TranslationRequest):
 async def extract_legal_entities(request: DocumentRequest):
     """Extract legal entities using Natural Language API"""
     try:
-        language_client = setup_natural_language()
-        
         if not language_client:
             return {"entities": [], "service": "Natural Language API not available"}
         
@@ -494,8 +567,6 @@ async def extract_legal_entities(request: DocumentRequest):
 async def convert_text_to_speech(request: TextToSpeechRequest):
     """Convert text to speech using Google Cloud Text-to-Speech API"""
     try:
-        tts_client = setup_text_to_speech()
-        
         if not tts_client:
             raise HTTPException(status_code=503, detail="Text-to-Speech service not available")
         

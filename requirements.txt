@@ -1,11 +1,17 @@
-fastapi
-uvicorn
-python-dotenv
-pydantic
-python-multipart
-langchain
-langchain-google-genai
-google-cloud-documentai
-google-cloud-translate
-google-cloud-language
-google-auth
+fastapi==0.104.1
+uvicorn==0.24.0
+python-dotenv==1.0.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# LangChain and AI
+langchain==0.1.0
+langchain-google-genai==1.0.1
+
+# Google Cloud Services
+google-cloud-documentai==2.20.1
+google-cloud-language==2.9.0
+google-cloud-translate==3.8.0
+google-cloud-texttospeech==2.14.1
+google-oauth2-tool==0.0.3
+google-auth==2.25.2
