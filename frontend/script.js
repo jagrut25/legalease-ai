@@ -1,5 +1,18 @@
 // --- CONFIGURATION ---
-const API_BASE_URL = 'http://127.0.0.1:8000';
+// Backend API Configuration
+const RENDER_BACKEND_URL = 'https://legalease-ai-ej7l.onrender.com';
+const LOCAL_BACKEND_URL = 'http://127.0.0.1:8000';
+
+// Auto-detect environment and use appropriate API URL
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? LOCAL_BACKEND_URL  // Local development
+    : RENDER_BACKEND_URL; // Production (Netlify frontend -> Render backend)
+
+// Log configuration for debugging
+console.log('🌐 Legalease AI Frontend');
+console.log('📍 Environment:', window.location.hostname === 'localhost' ? 'Development' : 'Production');
+console.log('🔗 API Base URL:', API_BASE_URL);
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js`;
 
 // API Endpoints
