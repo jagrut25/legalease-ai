@@ -1,0 +1,57 @@
+body {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar styling to match Figma */
+#document-content::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar {
+    width: 8px;
+}
+
+#document-content::-webkit-scrollbar-track,
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f5f9; /* slate-100 */
+}
+
+#document-content::-webkit-scrollbar-thumb,
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+    border-radius: 4px;
+}
+
+#document-content::-webkit-scrollbar-thumb:hover,
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* slate-400 */
+}
+
+/* Custom Highlight Styles from Figma */
+.highlight-red {
+    background-color: #FEE2E2; /* red-100 from Tailwind */
+}
+.highlight-yellow {
+    background-color: #FEF3C7; /* yellow-100 from Tailwind */
+}
+.highlight-blue {
+     background-color: #DBEAFE; /* blue-100 from Tailwind */
+}
+.highlight-green {
+    background-color: #DCFCE7; /* green-100 from Tailwind */
+}
+
+/* Chat bubble styles */
+.chat-bubble {
+    max-width: 80%;
+    word-wrap: break-word;
+    margin: 4px 0;
+}
+
+.chat-bubble.bg-blue-200 {
+    margin-left: auto;
+    text-align: right;
+}
+
+.chat-bubble.bg-slate-200 {
+    margin-right: auto;
+    text-align: left;
+}
+

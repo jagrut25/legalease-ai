@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-dotenv
+pydantic
+python-multipart
+langchain
+langchain-google-genai
+google-cloud-documentai
+google-cloud-translate
+google-cloud-language
+google-auth

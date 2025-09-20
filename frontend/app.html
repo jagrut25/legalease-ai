@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legalease AI - Document Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PDF.js library for fast client-side processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lexend:wght@600;700&display=swap" rel="stylesheet">
+    <script>
+        // Custom Tailwind theme to match Figma
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                        'lexend': ['Lexend', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-700">
+
+    <div id="app-container">
+        <!-- Header is always visible -->
+        <header id="app-header" class="bg-white sticky top-0 z-10 border-b border-slate-200">
+             <!-- Header content will be dynamically inserted here by script.js -->
+        </header>
+
+        <!-- Main content area will hold the current screen -->
+        <main id="main-content">
+
+            <!-- Landing Screen -->
+            <div id="landing-screen">
+                <div class="text-center px-4 py-16">
+                    <div class="bg-slate-800 inline-block p-4 rounded-2xl mb-6 shadow-lg">
+                        <!-- IconBrain SVG -->
+                        <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                    </div>
+                    <h1 class="font-lexend text-4xl md:text-5xl font-bold text-slate-800">Transform Complex Legal Documents</h1>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-500">Upload any legal document and get instant AI-powered analysis highlighting risks, warnings, and important clauses in plain language.</p>
+                    
+                    <div class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+                        <div id="upload-button" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-blue-500 transition cursor-pointer">
+                            <div class="bg-blue-100 text-blue-600 inline-block p-3 rounded-xl">
+                                <!-- IconUpload SVG -->
+                                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 15l-4-4m4 4v-4m4 4l-4-4" /></svg>
+                            </div>
+                            <h3 class="mt-4 font-lexend font-bold text-lg text-slate-800">Drop your document here</h3>
+                            <p class="mt-1 text-slate-500">PDF, DOCX, TXT up to 10MB</p>
+                            <input type="file" id="file-input" class="hidden" accept=".txt,.pdf">
+                        </div>
+                        <div id="paste-button" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-orange-500 transition cursor-pointer">
+                            <div class="bg-orange-100 text-orange-600 inline-block p-3 rounded-xl">
+                                <!-- IconText SVG -->
+                                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                            </div>
+                            <h3 class="mt-4 font-lexend font-bold text-lg text-slate-800">Paste document text</h3>
+                            <p class="mt-1 text-slate-500">Perfect for contracts & agreements</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Paste Screen -->
+            <div id="paste-screen" class="hidden">
+                 <div class="max-w-4xl mx-auto px-4 py-12">
+                    <button id="back-to-landing-btn" class="text-sm font-medium text-slate-600 hover:text-blue-600 flex items-center mb-6">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        Back to options
+                    </button>
+                    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
+                        <h2 class="font-lexend text-2xl font-bold text-slate-800">Document Text Input</h2>
+                        <p class="text-slate-500 mt-1">Paste or type your legal document content below</p>
+                        
+                        <textarea id="text-input" class="w-full h-64 mt-6 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Paste your legal document text here..."></textarea>
+                        <div class="text-right mt-6">
+                            <button id="analyze-paste-btn" class="bg-orange-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-orange-600 disabled:bg-slate-400 transition">
+                                Analyze Document →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Screen -->
+            <div id="loading-screen" class="hidden text-center mt-20">
+                 <p class="text-lg font-semibold text-slate-600 animate-pulse">Analyzing Document...</p>
+            </div>
+
+            <!-- Dashboard Screen -->
+            <div id="dashboard-screen" class="hidden">
+                <div class="max-w-7xl mx-auto px-6 py-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-128px)]">
+                        <!-- Left Panel -->
+                        <div class="bg-white rounded-2xl shadow-lg h-full flex flex-col border border-slate-200">
+                            <div class="p-6 border-b">
+                                <h2 class="font-lexend text-xl font-bold text-slate-800">Original Document</h2>
+                                <div class="flex items-center gap-6 mt-2 text-sm">
+                                    <span class="flex items-center gap-2"><span class="w-3 h-3 bg-red-500 rounded-full"></span>High Risk</span>
+                                    <span class="flex items-center gap-2"><span class="w-3 h-3 bg-yellow-400 rounded-full"></span>Caution</span>
+                                    <span class="flex items-center gap-2"><span class="w-3 h-3 bg-green-500 rounded-full"></span>Standard</span>
+                                </div>
+                            </div>
+                            <div id="document-content" class="p-6 overflow-y-auto prose max-w-none text-sm leading-relaxed"></div>
+                        </div>
+                        <!-- Right Panel -->
+                        <div class="bg-white rounded-2xl shadow-lg h-full flex flex-col border border-slate-200">
+                            <div class="p-6 border-b">
+                                <h2 class="font-lexend text-xl font-bold text-slate-800 flex items-center gap-3">
+                                    <svg class="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    AI Navigator
+                                </h2>
+                                <p class="text-slate-500 text-sm mt-1">Intelligent analysis of document risks and recommendations.</p>
+                                
+                                <!-- On-the-Fly Summary Translation -->
+                                <div class="mt-4 mb-4">
+                                    <label for="summary-translation-language-select" class="block text-sm font-medium text-slate-700 mb-2">
+                                        🌐 Translate Summary To:
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <select id="summary-translation-language-select" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-800 text-sm">
+                                            <option value="">Keep Original Language</option>
+                                            <option value="English">🇺🇸 English</option>
+                                            <option value="Spanish">🇪🇸 Spanish (Español)</option>
+                                            <option value="French">🇫🇷 French (Français)</option>
+                                            <option value="German">🇩🇪 German (Deutsch)</option>
+                                            <option value="Italian">🇮🇹 Italian (Italiano)</option>
+                                            <option value="Portuguese">🇵🇹 Portuguese (Português)</option>
+                                            <option value="Russian">🇷🇺 Russian (Русский)</option>
+                                            <option value="Chinese">🇨🇳 Chinese (中文)</option>
+                                            <option value="Japanese">🇯🇵 Japanese (日本語)</option>
+                                            <option value="Korean">🇰🇷 Korean (한국어)</option>
+                                            <option value="Arabic">🇸🇦 Arabic (العربية)</option>
+                                            <option value="Hindi">🇮🇳 Hindi (हिन्दी)</option>
+                                            <option value="Dutch">🇳🇱 Dutch (Nederlands)</option>
+                                        </select>
+                                        <button id="translate-summary-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-colors">
+                                            Translate
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1">
+                                        💡 Note: Audio playback is available for English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, and Dutch
+                                    </p>
+                                </div>
+                            </div>
+                            <div id="ai-navigator-content" class="p-6 overflow-y-auto space-y-6">
+                                <!-- Summary and cards will be inserted here -->
+                            </div>
+                            
+                            <!-- Q&A Chat Section -->
+                            <div class="border-t border-slate-200 p-6">
+                                <h3 class="font-lexend text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                                    <svg class="w-6 h-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 003.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423L16.5 15.75l.394 1.183a2.25 2.25 0 001.423 1.423L19.5 18.75l-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                                    </svg>
+                                    Ask AI Assistant
+                                </h3>
+                                <div id="chat-log" class="h-32 overflow-y-auto mb-4 p-3 bg-slate-50 rounded-lg border space-y-2">
+                                    <!-- Chat messages will appear here -->
+                                </div>
+                                <form id="chat-form" class="flex gap-2">
+                                    <input type="text" name="question" placeholder="Ask about this document..." 
+                                           class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                                        Send
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
