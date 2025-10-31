@@ -5,7 +5,7 @@ pydantic==2.5.0
 python-multipart==0.0.6
 
 # LangChain and AI
-langchain==0.1.0
+langchain==0.2.5
 langchain-google-genai==1.0.1
 
 # Google Cloud Services
