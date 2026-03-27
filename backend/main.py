@@ -190,8 +190,8 @@ def setup_document_ai():
         else:
             client = documentai.DocumentProcessorServiceClient()
         
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT_ID", "gen-ai-471115")
-        processor_id = os.getenv("DOCAI_PROCESSOR_ID", "10529f2538f89942")
+        project_id = os.getenv("GOOGLE_CLOUD_PROJECT_ID")
+        processor_id = os.getenv("DOCAI_PROCESSOR_ID")
         location = "us"  # or your preferred location
         
         processor_name = client.processor_path(project_id, location, processor_id)
